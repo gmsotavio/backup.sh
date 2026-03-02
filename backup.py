@@ -119,11 +119,13 @@ class BackupProgress:
     def draw_progress_bar(self, filename: str = "") -> None:
         """draw progress bar"""
         self.current += 1
-        percentage = (self.current / self.total) * 100 if self.total > 0 else 0
+
+        actual = min(self.current, self.total)
+        percentage = (actual / self.total) * 100 if self.total > 0 else 0
 
         # Create a CLI prograss bar
         bar_width = 30
-        filled = int(bar_width * self.current / self.total)
+        filled = int(bar_width * actual / self.total)
         bar = f"{EscapeChar.GRAY.value}{'█' * filled}{'░' * (bar_width - filled)}{EscapeChar.RESET.value}"
 
         # Truncate filename if it's too long to display
@@ -141,7 +143,7 @@ class BackupProgress:
 
         progress_bar = (f"\r {self.status_msg} [{bar}] "
                         f"{EscapeChar.YELLOW.value}{percentage:.1f}%{EscapeChar.RESET.value} "
-                        f"({self.current}/{self.total}): "
+                        f"({actual}/{self.total}): "
                         f"{EscapeChar.BLUE.value}'{filename}'{EscapeChar.RESET.value}")
         print(f"{EscapeChar.ERASE_LINE.value}{progress_bar}", end='', flush=True)
 
@@ -347,8 +349,8 @@ class Backup:
 
     @staticmethod
     def count_tar_entries(source_dir: Path) -> int:
-        """Count all entries (files, dirs) that tar processes"""
-        return sum(1 for _ in source_dir.rglob('*'))
+        """Count all entries (files, dirs) processed by tar including the root directory"""
+        return sum(1 for _ in source_dir.rglob('*')) + 1
 
     @staticmethod
     def create_tarball(source_dir: Path, output_file: Path, verbose: bool) -> Result[None]:
